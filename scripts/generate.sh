@@ -8,7 +8,7 @@ do
 		echo ${t}_${j}
 
 		./equal.exe $t > $dir/$t"_"$j".in"
-
+		sleep 1		
 
 	done 
 	echo " "

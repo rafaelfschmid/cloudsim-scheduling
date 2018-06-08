@@ -15,6 +15,14 @@ extern "C" {
 JNIEXPORT void JNICALL Java_MinSortCloudSim_segmented_1sort
   (JNIEnv *, jobject, jfloatArray, jintArray, jintArray, jint, jint);
 
+/*
+ * Class:     MinSortCloudSim
+ * Method:    segmented_sort_desc
+ * Signature: ([F[I[III)V
+ */
+JNIEXPORT void JNICALL Java_MinSortCloudSim_segmented_1sort_1desc
+  (JNIEnv *, jobject, jfloatArray, jintArray, jintArray, jint, jint);
+
 #ifdef __cplusplus
 }
 #endif

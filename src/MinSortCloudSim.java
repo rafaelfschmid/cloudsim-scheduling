@@ -37,6 +37,9 @@ public class MinSortCloudSim {
 
 	private native void segmented_sort(float machines[], int task_index[],
 			int segments[], int t, int m);
+	
+	private native void segmented_sort_desc(float machines[], int task_index[],
+			int segments[], int t, int m);
 
 	static {
 		System.loadLibrary("MinSortCloudSim");
@@ -62,6 +65,27 @@ public class MinSortCloudSim {
 
 		new MinSortCloudSim().segmented_sort(machines, task_index, segments, t,	m);
 	}
+	
+	private static void segmentedSorting2(float machines[], int task_index[],
+			int machine_current_index[], int task_map[],
+			float completion_times[], int t, int m) {
+
+		int segments[] = new int[m];
+
+		for (int i = 0; i < m; i++) {
+			for (int j = 0; j < t; j++) {
+				machines[i * t + j] = (float) expectedTime(cloudletList.get(j),
+						vmlist.get(i));
+				task_index[i * t + j] = j;
+				task_map[j] = -1;
+			}
+			segments[i] = i * t;
+			machine_current_index[i] = 0;
+			completion_times[i] = 0;
+		}
+
+		new MinSortCloudSim().segmented_sort_desc(machines, task_index, segments, t,	m);
+	}
 
 	private static void min_min_gpu(DatacenterBroker broker) {
 		// Task* machines, float* completion_times, int* task_map, uint*
@@ -79,20 +103,6 @@ public class MinSortCloudSim {
 		segmentedSorting(machines, task_index, machine_current_index, task_map,
 				completion_times, t, m);
 
-		for(int i = 0; i < m; i++) {
-			for(int j = 0; j < t; j++) {
-				System.out.print(task_index[i*t+j] + " ");
-			}
-			System.out.println();
-		}
-		
-		for(int i = 0; i < m; i++) {
-			for(int j = 0; j < t; j++) {
-				System.out.print(machines[i*t+j] + " ");
-			}
-			System.out.println();
-		}
-		
 		int min = 0;
 		int imin = 0;
 		float min_value;
@@ -117,11 +127,9 @@ public class MinSortCloudSim {
 			}
 			
 			int cloudletId = cloudletList.get(task_index[min]).getCloudletId();
-			System.out.println("Task id: " + cloudletId);
 			int vmId = vmlist.get(imin).getId();
-			System.out.println("VM id: " + vmId);
+			
 			task_map[task_index[min]] = imin;
-			//broker.bindCloudletToVm(task_index[min], imin);
 			broker.bindCloudletToVm(cloudletId, vmId);
 			completion_times[imin] = min_value;
 		}
@@ -165,6 +173,83 @@ public class MinSortCloudSim {
 
 	}
 	
+	private static void max_min_gpu(DatacenterBroker broker) {
+		// Task* machines, float* completion_times, int* task_map, uint*
+		// machine_current_index, int m, int t) {
+
+		int m = vmlist.size();
+		int t = cloudletList.size();
+
+		float machines[] = new float[t * m];
+		float completion_times[] = new float[m];
+		int machine_current_index[] = new int[m];
+		int task_index[] = new int[t * m];
+		int task_map[] = new int[t];
+
+		for (int j = 0; j < vmlist.size(); j++) {
+			completion_times[j] = 0;
+		}
+		
+		segmentedSorting2(machines, task_index, machine_current_index, task_map,
+				completion_times, t, m);
+
+		/*for(int i = 0; i < m; i++) {
+			for(int j = 0; j < t; j++) {
+				System.out.print(task_index[i*t+j] + " ");
+			}
+			System.out.println();
+		}
+		
+		for(int i = 0; i < m; i++) {
+			for(int j = 0; j < t; j++) {
+				System.out.print(machines[i*t+j] + " ");
+			}
+			System.out.println();
+		}*/
+		
+		int min = 0;
+		int imin = 0;
+		float max_value;
+
+		for (int k = 0; k < t; k++) {
+
+			max_value = 0;
+
+			for (int i = 0; i < m; i++) {
+
+				int j = machine_current_index[i];
+				while (task_map[task_index[i * t + j]] != -1) {
+					j++;
+				}
+				machine_current_index[i] = j;
+
+				if (completion_times[i] + machines[i * t + j] > max_value) {
+					min = i * t + j;
+					max_value = completion_times[i] + machines[min];
+				}
+			}
+			
+			for (int i = 0; i < vmlist.size(); i++) {
+
+				float time = (float) expectedTime(cloudletList.get(task_index[min]),
+						vmlist.get(i));
+				
+				if (completion_times[i] + time < max_value) {
+					imin = i;
+					max_value = completion_times[i] + time;
+				}
+			}
+			
+			int cloudletId = cloudletList.get(task_index[min]).getCloudletId();
+			int vmId = vmlist.get(imin).getId();
+			
+			task_map[task_index[min]] = imin;
+			broker.bindCloudletToVm(cloudletId, vmId);
+			completion_times[imin] = max_value;
+		}
+
+	}
+	
 	private static void max_min_cpu(DatacenterBroker broker) {
 		float completion_times[] = new float[vmlist.size()];
 		List<Cloudlet> cloudletAux = new ArrayList<Cloudlet>();
@@ -197,7 +282,7 @@ public class MinSortCloudSim {
 						vmlist.get(j));
 				if (completion_times[j] + time < max_value) {
 					jmin = j;
-					max_value = completion_times[jmin] + time;
+					max_value = completion_times[j] + time;
 				}
 			}
 			
@@ -232,9 +317,12 @@ public class MinSortCloudSim {
 	public static void main(String[] args) {
 
 		if (args.length < 2) {
-			Log.printLine("ERROR - Parameters: <number of vms> <total mips>");
+			Log.printLine("ERROR - Parameters: <algorithm> <machine file> <task file> <print log>");
 		} else {
-
+			if(args[3].compareTo("all") != 0) {
+				Log.disable();
+			}
+			
 			Log.printLine("Starting CloudSimExample3...");
 
 			try {
@@ -336,7 +424,7 @@ public class MinSortCloudSim {
 				//NetworkTopology.addLink(datacenter1.getId(), broker.getId(),20.0, 10);
 
 				long startTime = 0, stopTime = 0;
-				if (args[0].compareTo("mingpu") == 0) {
+				if (args[0].compareTo("minmin") == 0) {
 					startTime = System.currentTimeMillis();
 					min_min_gpu(broker);
 					stopTime = System.currentTimeMillis();
@@ -344,7 +432,12 @@ public class MinSortCloudSim {
 					startTime = System.currentTimeMillis();
 					min_min_cpu(broker);
 					stopTime = System.currentTimeMillis();
-				} else if (args[0].compareTo("maxcpu") == 0) {
+				} else if (args[0].compareTo("maxmin") == 0) {
+					startTime = System.currentTimeMillis();
+					max_min_gpu(broker);
+					stopTime = System.currentTimeMillis();
+				}
+				else if (args[0].compareTo("maxcpu") == 0) {
 					startTime = System.currentTimeMillis();
 					max_min_cpu(broker);
 					stopTime = System.currentTimeMillis();
@@ -365,9 +458,15 @@ public class MinSortCloudSim {
 				CloudSim.stopSimulation();
 
 				printCloudletList(newList);
-
-				System.out.println("Scheduling time: " + estimatedTime);
-				// datacenter0.;
+				
+				if(args[3].compareTo("all") != 0) {
+					DecimalFormat dft = new DecimalFormat("###.####");
+					double f = cloudletList.get(cloudletList.size()-1).getFinishTime();
+					double s = estimatedTime/1000.000;
+					double sum = f + s;
+					
+					System.out.println( dft.format(f) + "\t" +  dft.format(s) + "\t" +  dft.format(sum));
+				}
 
 			} catch (Exception e) {
 				e.printStackTrace();

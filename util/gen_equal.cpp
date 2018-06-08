@@ -24,7 +24,7 @@
 
 void vectors_gen(int num_elements, int min, int max) {
 
-	srand(time(NULL));
+	srand(time());
 
 	for (int i = 0; i < num_elements; i++)
 	{
