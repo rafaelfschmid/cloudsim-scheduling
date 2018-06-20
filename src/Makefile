@@ -7,14 +7,14 @@ gen=-gencode arch=compute_20,code=sm_20 -gencode arch=compute_30,code=sm_30 -gen
 #first=MinSortExample
 first=MinSortCloudSim
 
-all: minsort 
+all: minsort cost
 
-minsort: $(first).cu
-	nvcc $(gen) $(libs) -o lib$(first).so -shared -Xcompiler -fPIC $(first).cu $(params) -DELAPSED_TIME=$(TIME)
+minsort: MinSortCloudSim.cu
+	nvcc $(gen) $(libs) -o libMinSortCloudSim.so -shared -Xcompiler -fPIC MinSortCloudSim.cu $(params) -DELAPSED_TIME=$(TIME)
 
+cost: CloudSimCost.cu
+	nvcc $(gen) $(libs) -o libCloudSimCost.so -shared -Xcompiler -fPIC CloudSimCost.cu $(params) -DELAPSED_TIME=$(TIME)
 
-cloud1: $(first).cu
-	nvcc $(gen) $(libs) -o lib$(first).so -shared -Xcompiler -fPIC $(first).cu $(params) -DELAPSED_TIME=$(TIME)
 
 
 
