@@ -340,29 +340,35 @@ public class CloudSimCost {
 
 				File file = new File(args[1]);
 				BufferedReader br_machines = new BufferedReader(new FileReader(file));
+				// VM description
+				int number_of_vms = Integer.parseInt(br_machines.readLine());
 				
-				int number_of_hosts = Integer.parseInt(br_machines.readLine());
-				List<Integer> hostPower = new ArrayList<Integer>();
-				for (int vmid = 0; vmid < number_of_hosts; vmid++) {
-					// create VMs
-					float mips = Integer.parseInt(br_machines.readLine()); 
-					hostPower.add((int) mips);
+				List<Integer> lstMips = new ArrayList<Integer>();
+				int max_mips = 0;
+				for (int vmid = 0; vmid < number_of_vms; vmid++) {
+					int mips = Integer.parseInt(br_machines.readLine());
+					if(max_mips < mips)
+						max_mips = mips;
+					lstMips.add(mips);
 				}
 				
-				
-				int power = 1000;//Integer.parseInt(br_machines.readLine());
 				// Second step: Create Datacenters
 				// Datacenters are the resource providers in CloudSim. We need
 				// at least one of them to run a CloudSim simulation
 				@SuppressWarnings("unused")
-				Datacenter datacenter0 = createDatacenter("Datacenter_0", hostPower);
+				Datacenter datacenter0 = createDatacenter("Datacenter_0", max_mips);
 				@SuppressWarnings("unused")
-				Datacenter datacenter1 = createDatacenter("Datacenter_1", hostPower);
+				Datacenter datacenter1 = createDatacenter("Datacenter_1", max_mips);
 				@SuppressWarnings("unused")
-				Datacenter datacenter2 = createDatacenter("Datacenter_2", hostPower);
+				Datacenter datacenter2 = createDatacenter("Datacenter_2", max_mips);
 				@SuppressWarnings("unused")
-				Datacenter datacenter3 = createDatacenter("Datacenter_3", hostPower);
-			
+				Datacenter datacenter3 = createDatacenter("Datacenter_3", max_mips);
+				@SuppressWarnings("unused")
+				Datacenter datacenter4 = createDatacenter("Datacenter_4", max_mips);
+				@SuppressWarnings("unused")
+				Datacenter datacenter5 = createDatacenter("Datacenter_5", max_mips);			
+				@SuppressWarnings("unused")
+				Datacenter datacenter6 = createDatacenter("Datacenter_6", max_mips);
 				
 				// Third step: Create Broker
 				DatacenterBroker broker = createBroker();
@@ -371,10 +377,7 @@ public class CloudSimCost {
 				// Fourth step: Create one virtual machine
 				vmlist = new ArrayList<Vm>();
 
-
-
 				// VM description
-				int number_of_vms = number_of_hosts;//Integer.parseInt(br_machines.readLine());
 				long size = 10000; // image size (MB)
 				int ram = 2048; // vm memory (MB)
 				long bw = 1000;
@@ -383,8 +386,8 @@ public class CloudSimCost {
 
 				for (int vmid = 0; vmid < number_of_vms; vmid++) {
 					// create VMs
-					float mips = hostPower.get(vmid); 
-					Vm vm = new Vm(vmid, brokerId, mips,
+					//float mips = Integer.parseInt(br_machines.readLine());
+					Vm vm = new Vm(vmid, brokerId, lstMips.get(vmid),
 							pesNumber, ram, bw, size, vmm,
 							new CloudletSchedulerSpaceShared());
 
@@ -479,7 +482,7 @@ public class CloudSimCost {
 		}
 	}
 
-	private static Datacenter createDatacenter(String name, List<Integer> hostPower) {
+	private static Datacenter createDatacenter(String name, int max_mips) {
 
 		// Here are the steps needed to create a PowerDatacenter:
 		// 1. We need to create a list to store one or more
@@ -492,25 +495,22 @@ public class CloudSimCost {
 		// a Machine.
 		List<Pe> peList1 = new ArrayList<Pe>();
 
-		//int mips = 1000;
+		int mips = max_mips;
 		//int mips = power;
 
 		// 3. Create PEs and add these into the list.
 		// for a quad-core machine, a list of 4 PEs is required:
 		// need to store Pe id and MIPS Rating
-		peList1.add(new Pe(0, new PeProvisionerSimple(hostPower.get(currenthost)))); 
-//		peList1.add(new Pe(1, new PeProvisionerSimple(hostPower.get(currenthost++))));
-//		peList1.add(new Pe(2, new PeProvisionerSimple(hostPower.get(currenthost++))));
-//		peList1.add(new Pe(3, new PeProvisionerSimple(hostPower.get(currenthost++))));
+		peList1.add(new Pe(0, new PeProvisionerSimple(mips))); 
+		peList1.add(new Pe(1, new PeProvisionerSimple(mips)));
+//		peList1.add(new Pe(2, new PeProvisionerSimple(mips)));
+//		peList1.add(new Pe(3, new PeProvisionerSimple(mips)));
 
-		currenthost = (currenthost+1)%hostPower.size();
 		// Another list, for a dual-core machine
 		List<Pe> peList2 = new ArrayList<Pe>();
-		peList2.add(new Pe(0, new PeProvisionerSimple(hostPower.get(currenthost))));
-//		peList2.add(new Pe(1, new PeProvisionerSimple(hostPower.get(currenthost++))));
+		peList2.add(new Pe(0, new PeProvisionerSimple(mips))); 
+//		peList2.add(new Pe(1, new PeProvisionerSimple(mips)));
 		
-		currenthost = (currenthost+1)%hostPower.size();
-
 		// 4. Create Hosts with its id and list of PEs and add them to the list
 		// of machines
 		int hostId = 0;

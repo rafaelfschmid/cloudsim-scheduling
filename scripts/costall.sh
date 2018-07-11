@@ -2,7 +2,7 @@
 input=$1 #input files dir
 
 echo "minmin"
-for m in 2 4 6 8 ; do
+for m in 2 4 8 16 ; do
 	((t = 1024))
 	echo ${m}x${t}
 	for i in 0 1 2 3 4 5 6 7 8 9 ; do
@@ -12,7 +12,7 @@ for m in 2 4 6 8 ; do
 done
 
 echo "maxmin"
-for m in 2 4 6 8 ; do
+for m in 2 4 8 16 ; do
 	((t = 1024))
 	echo ${m}x${t}
 	for i in 0 1 2 3 4 5 6 7 8 9 ; do 
@@ -22,7 +22,7 @@ for m in 2 4 6 8 ; do
 done
 
 echo "fcfs"
-for m in 2 4 6 8 ; do
+for m in 2 4 8 16 ; do
 	((t = 1024))
 	echo ${m}x${t}
 	for i in 0 1 2 3 4 5 6 7 8 9 ; do
